@@ -10,16 +10,34 @@ local regen_interval = 0.5 -- Time in seconds between each step
 local regen_timer = 0      -- Timer to keep track of regen_interval
 local regen_step = 1       -- Number of HP added every step
 
+local no_heal_radius = 10 -- zone in which medkits cannot be used
+
 -- Boolean function for use by other mods to check if a player is healing
 medkits = {}
 function medkits.is_healing(name)
 	return players[name] and true or false
 end
 
+-- checks if player is in a valid area to heal
+local function can_heal(player)
+	local pos = player:get_pos()
+	local name = player:get_player_name()
+	local base_pos = ctf.players[name].team.spawn
+	pos.y = base_pos.y -- negate y-axis
+
+	return vector.distance(pos, base_pos) < no_heal_radius
+end
+
 -- Called when player uses a medkit
 -- Aborts if player is already healing
 local function start_healing(stack, player)
 	if not player then
+		return
+	end
+	if not can_heal(player) then
+		minetest.chat_send_player(, minetest.colorize("#FF4444",
+			"Your cannot heal too close to the enemy base!")
+		player:get_inventory():add_item("main", ItemStack("medkits:medkit 1"))
 		return
 	end
 	local name = player:get_player_name()
